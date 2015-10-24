@@ -11,7 +11,9 @@ apt-get install -y git build-essential \
   gnupg-agent \
   pass \
   openjdk-8-jre \
-  postgresql-9.4
+  postgresql-9.4 \
+  zlib1g-dev \
+  ninja-build
 sudo -i -u vagrant /home/vagrant/src/github.com/calebdoxsey/devenv/bin/devenv
 SCRIPT
 
@@ -28,7 +30,7 @@ Vagrant.configure(2) do |config|
   config.vm.synced_folder "../../../../storage/keys", "/home/vagrant/keys", type: "nfs"
 
   config.vm.provider "virtualbox" do |v|
-    v.memory = 1024
+    v.memory = 2048
     v.cpus = 4
   end
 end

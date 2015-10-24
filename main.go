@@ -348,13 +348,59 @@ func installElasticSearch() error {
 
 func installGoTools() error {
 	log.Println("installing go tools")
-	cmd := exec.Command("go", "get", "-v", "github.com/mattn/goreman")
+	cmd := exec.Command("go", "get", "-v",
+		"github.com/mattn/goreman",
+		"github.com/robfig/glock",
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func installHaproxy() error {
+	dst := filepath.Join(home, "dist", "haproxy")
+
+	haproxyVersion, _ := exec.Command(filepath.Join(dst, "haproxy"), "-v").CombinedOutput()
+	if strings.HasPrefix(strings.TrimSpace(string(haproxyVersion)), "HA-Proxy version 1.6.1") {
+		return nil
+	}
+
+	log.Println("installing haproxy")
+
+	err := download(
+		"http://www.haproxy.org/download/1.6/src/haproxy-1.6.1.tar.gz",
+		"haproxy.tar.gz",
+		"/tmp",
+	)
+	if err != nil {
+		return err
+	}
+
+	os.RemoveAll(dst)
+	os.Rename("/tmp/haproxy-1.6.1", dst)
+
+	cmd := exec.Command("bash", "-c", "make TARGET=linux2628")
+	cmd.Dir = dst
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	cmd = exec.Command("bash", "-c", "sudo setcap 'cap_net_bind_service=+ep' haproxy")
+	cmd.Dir = dst
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -375,6 +421,7 @@ func main() {
 		installCassandra,
 		installElasticSearch,
 		installGoTools,
+		installHaproxy,
 	}
 	for _, f := range todo {
 		err := f()
